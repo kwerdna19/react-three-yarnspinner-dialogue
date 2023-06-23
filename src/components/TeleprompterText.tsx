@@ -4,7 +4,7 @@ import { forwardRef, useCallback, useEffect, useState } from "react"
 import { Mesh } from "three"
 import useTrigger from "../hooks/useTrigger"
 
-// range from 1-10 (technically 0.1 - 500)
+// range from 1-10 (technically > 0 && <= 500)
 // 0.1 = 5 sec / word --> 500 = 1 ms / word
 
 type Props = {
@@ -12,7 +12,6 @@ type Props = {
   speed?: number,
   onPrintEnd?: (returnedEarly?: boolean) => void,
   mode?: 'word' | 'letter' | 'instant',
-
 
   color?: string,
   fontSize?: number,
@@ -33,7 +32,6 @@ const TeleprompterText = forwardRef<Mesh, Props>(({
   mode = 'word',
 }: Props, ref) => {
 
-
     const elements = mode === 'instant' ? [line] : line.split(mode === 'word' ? ' ' : '')
     const totalElements = elements.length
 
@@ -46,7 +44,7 @@ const TeleprompterText = forwardRef<Mesh, Props>(({
 
     const onTrigger = useCallback(() => {
       setElementNum(totalElements)
-    }, [setElementNum, totalElements, onPrintEnd, wordDur])
+    }, [setElementNum, totalElements])
   
     useTrigger(onTrigger)
   
