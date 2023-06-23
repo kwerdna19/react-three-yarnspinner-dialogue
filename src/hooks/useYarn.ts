@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from "react"
 import YarnBound from 'yarn-bound'
-import { useNode, useOptions, useYarnStorage } from './useYarnStore';
-import useTrigger from "./useTrigger";
+import { useNode, useYarnStorage } from './useYarnStore';
 import { getCharacter } from '../utils';
 import useCommandHandler from "./useCommandHandler";
 import { useYarnStore } from "../store";
@@ -17,8 +16,8 @@ export type Character = {
 }
 
 export type YarnHookOptions = {
-  skippable?: boolean,
-  defaultToFirstOption?: boolean
+  skippable: boolean,
+  defaultToFirstOption: boolean
 }
 
 // https://docs.yarnspinner.dev/getting-started/writing-in-yarn/functions
@@ -35,7 +34,7 @@ const yarnFunctions = {
     const max = Math.floor(high);
     return Math.floor(Math.random() * (max - min + 1)) + min;
   },
-  dice: (high: number) => {
+  dice: (high = 6) => {
     const max = Math.floor(high)
     return Math.floor(Math.random()*max) + 1
   },
@@ -63,11 +62,13 @@ const yarnFunctions = {
   }
 }
 
-const useYarn = (text: string) => {
+const defaultOptions: YarnHookOptions = {
+  skippable: false,
+  defaultToFirstOption: true
+}
 
-  // rethink options + api
-  const options = useOptions()
-  const { skippable } = options
+const useYarn = (text: string, _options: Partial<YarnHookOptions> = defaultOptions) => {
+  const { skippable } = { ...defaultOptions, ..._options }
 
   const setKey = useState(0)[1]
   const isAllowedToAdvance = useRef(false)
@@ -90,12 +91,9 @@ const useYarn = (text: string) => {
 
   const gameRef = useRef(getRunner(node))
 
-  const runner = gameRef.current
-
-
-
   const advance = useCallback((step?: number) => {
     console.log('advance')
+    const runner = gameRef.current
     if(step !== undefined) {
       // coming from a manual handler (option select probably)
       isAllowedToAdvance.current = true
@@ -111,20 +109,18 @@ const useYarn = (text: string) => {
     setKey(k => k+1)
   }, [setKey, skippable, setNode])
 
-  useTrigger(advance)
-
   const setAllowedToAdvance = useCallback((allowed = true) => {
     isAllowedToAdvance.current = allowed
   }, [])
 
-  const character = getCharacter(runner.currentResult)
+  const currentResult = gameRef.current.currentResult
+  const character = getCharacter(currentResult)
 
   return {
-    currentResult: runner.currentResult,
+    currentResult,
     setAllowedToAdvance,
     advance,
-    character,
-    options
+    character
   }
 }
 

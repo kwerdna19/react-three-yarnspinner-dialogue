@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import Grid from './components/GridHelper'
 import YarnDialogue from './components/YarnDialogue'
+import { useState } from 'react'
 
 const chapter1 = `title: Start
 ---
@@ -49,67 +50,78 @@ title: Done
 Player: Sounds good!
 ===`
 
-// const chapter2 = `title: Start
-// ---
-// Companion: Hi there! Welcome to chapter 2?
-// <<log 3 4 5 true test "true">>
-// Gambler: My lucky number is {random_range(1,10)}!
-// <<alert "test message">>
-// Debug: I have visited Start this many times: {visited_count("Start")}
-// Debug: I have visited swimming: {visited("Swimming")}
-// -> Player: I want to go swimming.
-//     Companion: Okay, let's go swimming.
-//     <<jump Swimming>>
-// -> Player: I want to go swimming 2.
-//     Companion: Okay, let's go swimming 2.
-//     <<jump Swimming>>
-// -> Player: I'd prefer to go hiking.
-//     Companion: Cool, we'll go hiking then.
-//     <<jump Hiking>>
-// ===
+const chapter2 = `title: Start
+---
+Companion: Hi there! Welcome to chapter 2?
+<<log 3 4 5 true test "true">>
+Gambler: My lucky number is {random_range(1,10)}!
+<<alert "test message">>
+Debug: I have visited Start this many times: {visited_count("Start")}
+Debug: I have visited swimming: {visited("Swimming")}
+-> Player: I want to go swimming.
+    Companion: Okay, let's go swimming.
+    <<jump Swimming>>
+-> Player: I want to go swimming 2.
+    Companion: Okay, let's go swimming 2.
+    <<jump Swimming>>
+-> Player: I'd prefer to go hiking.
+    Companion: Cool, we'll go hiking then.
+    <<jump Hiking>>
+===
 
-// title: Swimming
-// ---
-// Companion: Where do you want to swim?
-// -> Player: The lake!
-//     Companion: Nice! It's a great day for it.
-// -> Player: The swimming pool!
-//     Companion: Oh, awesome! I heard they installed a new slide.
-// -> Player: Go back to start!
-//     Companion: Oh, awesome! I heard they installed a new slide.
-//     <<jump Start>>
-// <<jump Done>>
-// ===
+title: Swimming
+---
+Companion: Where do you want to swim?
+-> Player: The lake!
+    Companion: Nice! It's a great day for it.
+-> Player: The swimming pool!
+    Companion: Oh, awesome! I heard they installed a new slide.
+-> Player: Go back to start!
+    Companion: Oh, awesome! I heard they installed a new slide.
+    <<jump Start>>
+<<jump Done>>
+===
 
-// title: Hiking
-// ---
-// Companion: Have you got your hiking boots ready?
-// -> Player: Yes.
-//     Companion: Great, let's go!
-// -> Player: No.
-//     Companion: We can swing by your place and pick them up!
+title: Hiking
+---
+Companion: Have you got your hiking boots ready?
+-> Player: Yes.
+    Companion: Great, let's go!
+-> Player: No.
+    Companion: We can swing by your place and pick them up!
 
-// <<jump Done>>
-// ===
-// title: Done
-// ---
-// Player: Sounds good!
-// ===`
+<<jump Done>>
+===
+title: Done
+---
+Player: Sounds good!
+===`
 
-function Demo() {
+const chapters = [chapter1, chapter2]
+
+function Demo({ yarn }: { yarn: string }) {
 
   return <>
     <Grid />
-    <YarnDialogue yarn={chapter1} />
+    <YarnDialogue yarn={yarn} />
   </>
 }
 
 function App() {
 
+  const [chapter, setChapter] = useState(0)
+
   return (
-    <Canvas camera={{position: [0,0,10]}} orthographic>
-      <Demo />
-    </Canvas>
+    <>
+      <Canvas camera={{position: [0,0,10]}} orthographic>
+        <Demo yarn={chapters[chapter]} />
+      </Canvas>
+      <div style={{ position: 'absolute', top: 12, right: 12 }}>
+        <button onClick={() => setChapter(c => c === 0 ? 1 : 0)}>
+          Chapter {chapter + 1}
+        </button>
+      </div>
+    </>
   )
 }
 

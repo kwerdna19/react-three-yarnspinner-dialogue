@@ -10,7 +10,7 @@ import { Mesh, OrthographicCamera } from 'three'
 import NextDialogIndicator from './NextDialogIndicator'
 
 
-type Props = {
+type DialogueBoxProps = {
   current: CurrentResult,
   advance: ReturnType<typeof useYarn>['advance'],
   setAllowedToAdvance: ReturnType<typeof useYarn>['setAllowedToAdvance'],
@@ -89,7 +89,7 @@ const DialogueBox = ({
   dialogBoxOptions: _dialogBoxOptions,
   indicatorColor,
   indicatorSize
-}: Props) => {
+}: DialogueBoxProps) => {
 
   const camera = useThree(s => s.camera)
   if(!(camera instanceof OrthographicCamera)) {
@@ -105,8 +105,8 @@ const DialogueBox = ({
   const canvasHeight = useThree(s => s.size.height)
 
 
-  const characterBoxOptions = {...defaultCharacterBoxOptions, ...(_characterBoxOptions || {})}
-  const dialogBoxOptions = {...defaultDialogBoxOptions, ...(_dialogBoxOptions || {})}
+  const characterBoxOptions = {...defaultCharacterBoxOptions, ..._characterBoxOptions}
+  const dialogBoxOptions = {...defaultDialogBoxOptions, ..._dialogBoxOptions}
 
   const width = _width ?? canvasWidth
   const text = current && 'text' in current ? current.text ?? '' : ''
