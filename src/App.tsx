@@ -1,4 +1,4 @@
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import Grid from './components/GridHelper'
 import YarnDialogue from './components/YarnDialogue'
 import { useState } from 'react'
@@ -99,11 +99,17 @@ Player: Sounds good!
 
 const chapters = [chapter1, chapter2]
 
-function Demo({ yarn }: { yarn: string }) {
+function Demo({ text }: { text: string }) {
+
+  const w = useThree(s => s.size.width)
 
   return <>
     <Grid />
-    <YarnDialogue yarn={yarn} />
+    <YarnDialogue
+      yarn={text}
+      width={w/2}
+      position={[0, 0]}
+    />
   </>
 }
 
@@ -114,7 +120,7 @@ function App() {
   return (
     <>
       <Canvas camera={{position: [0,0,10]}} orthographic>
-        <Demo yarn={chapters[chapter]} />
+        <Demo text={chapters[chapter]} />
       </Canvas>
       <div style={{ position: 'absolute', top: 12, right: 12 }}>
         <button onClick={() => setChapter(c => c === 0 ? 1 : 0)}>

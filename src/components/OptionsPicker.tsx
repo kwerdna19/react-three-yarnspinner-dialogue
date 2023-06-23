@@ -14,10 +14,12 @@ type Props = {
   onSelection: (selectionIndex: number) => void,
   position?: Vector3,
   onHeightMeasure?: (height: number) => void
+  fontColor?: string
 }
 
 const OptionsPicker = ({
-  fontSize = 12,
+  fontSize = 16,
+  fontColor,
   options,
   onSelection,
   position,
@@ -85,13 +87,13 @@ const OptionsPicker = ({
       const isSelected = selectedIndex === i
       return <Text
         key={i}
-        color={'black'}
+        color={fontColor}
         fontSize={fontSize}
         outlineWidth={isSelected ? '2%' : 0}
         onClick={() => onSelection(i)}
         onPointerOver={() => setSelectedIndex(i)}
         anchorX="left" anchorY="top"
-        position={[0,-1.25*fontSize*i,0]}
+        position={[0, -1.25*fontSize*i, 0]}
     >
       {isSelected ? '-> ' : ''}{o.text}
     </Text>

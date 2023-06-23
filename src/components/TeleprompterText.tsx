@@ -1,36 +1,33 @@
 import { Text } from "@react-three/drei"
-import { Vector3 } from "@react-three/fiber"
-import { forwardRef, useCallback, useEffect, useState } from "react"
+import { Vector2, Vector3 } from "@react-three/fiber"
+import { ComponentProps, forwardRef, useCallback, useEffect, useState } from "react"
 import { Mesh } from "three"
 import useTrigger from "../hooks/useTrigger"
+import { vector2ToTuple } from "../utils"
 
 // range from 1-10 (technically > 0 && <= 500)
 // 0.1 = 5 sec / word --> 500 = 1 ms / word
 
-type Props = {
+type TextProps = ComponentProps<typeof Text>
+
+type BaseTeleprompterTextProps = {
   line: string,
   speed?: number,
   onPrintEnd?: (returnedEarly?: boolean) => void,
   mode?: 'word' | 'letter' | 'instant',
-
-  color?: string,
-  fontSize?: number,
-  lineHeight?: number,
-  position?: Vector3,
-  maxWidth?: number
+  position?: Vector2
 }
 
-const TeleprompterText = forwardRef<Mesh, Props>(({
+export type TeleprompterTextProps = BaseTeleprompterTextProps & Omit<TextProps, 'anchorX' | 'anchorY' | 'ref' | 'children' | keyof BaseTeleprompterTextProps>
+
+const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
   line,
   speed = 6,
-  fontSize = 12,
-  lineHeight = 1.1,
   onPrintEnd,
-  color = 'black',
   position,
-  maxWidth,
   mode = 'word',
-}: Props, ref) => {
+  ...textProps
+}: TeleprompterTextProps, ref) => {
 
     const elements = mode === 'instant' ? [line] : line.split(mode === 'word' ? ' ' : '')
     const totalElements = elements.length
@@ -64,16 +61,15 @@ const TeleprompterText = forwardRef<Mesh, Props>(({
     }, [elementDur, elementNum, totalElements, setElementNum, onPrintEnd])
   
     const text = elements.slice(0, elementNum).join(mode === 'word' ? ' ' : '')
+
+    const [x,y] = vector2ToTuple(position)
   
     return (<Text
       ref={ref}
-      color={color}
-      fontSize={fontSize}
-      position={position}
+      position={[x,y,0]}
       anchorX="left"
       anchorY="top"
-      maxWidth={maxWidth}
-      lineHeight={lineHeight}
+      {...textProps}
   >
     {text}
   </Text>)
