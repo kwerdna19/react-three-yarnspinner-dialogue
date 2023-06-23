@@ -1,7 +1,7 @@
 import { Text } from "@react-three/drei"
-import { Vector2, Vector3 } from "@react-three/fiber"
+import { Vector2 } from "@react-three/fiber"
 import { ComponentProps, forwardRef, useCallback, useEffect, useState } from "react"
-import { Mesh } from "three"
+import { Mesh, Box3, Vector3 } from 'three';
 import useTrigger from "../hooks/useTrigger"
 import { vector2ToTuple } from "../utils"
 
@@ -63,10 +63,29 @@ const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
     const text = elements.slice(0, elementNum).join(mode === 'word' ? ' ' : '')
 
     const [x,y] = vector2ToTuple(position)
+
+    useEffect(() => {
+      if(!ref || typeof ref === 'function' || !ref.current) {
+        return
+      }
+
+      const node = ref.current
+      
+
+      function onComplete() {
+        const h = new Box3().setFromObject(node).getSize(new Vector3()).y
+        console.log(node, h)
+      }
+
+      node.addEventListener('synccomplete', onComplete)
+
+      return () => node.removeEventListener('synccomplete', onComplete)
+
+    }, [])
   
     return (<Text
       ref={ref}
-      position={[x,y,0]}
+      position={[x,y,1]}
       anchorX="left"
       anchorY="top"
       {...textProps}

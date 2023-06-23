@@ -13,7 +13,7 @@ type DialogueBoxProps = {
   advance: ReturnType<typeof useYarn>['advance'],
   setAllowedToAdvance: ReturnType<typeof useYarn>['setAllowedToAdvance'],
   width?: number,
-  minHeight?: number,
+  height?: number,
   position?: [number, number],
   padding?: number,
   expandDirection?: 'up' | 'down',
@@ -61,7 +61,7 @@ const DialogueBox = ({
   textMode = 'letter',
   textSpeed = 6,
   width: _width,
-  minHeight = 0,
+  height: _height,
   position = [0,0],
   padding = 0,
   expandDirection = 'up',
@@ -88,9 +88,10 @@ const DialogueBox = ({
   const canvasHeight = useThree(s => s.size.height)
 
   const width = _width ?? canvasWidth
+
+  const heightFixed = _height !== undefined
+
   const text = current && 'text' in current ? current.text ?? '' : ''
-
-
   const showOptions = current && 'options' in current && printingDone
   const allowed = !(current && 'options' in current)
 
@@ -107,19 +108,29 @@ const DialogueBox = ({
     return null
   }
 
+
+  const getTextHeight = () => {
+    const textYMin = textRef.current?.geometry?.boundingBox?.min?.y
+    const textYMax = textRef.current?.geometry?.boundingBox?.max?.y
+    if(textYMin === undefined || textYMax=== undefined) {
+      return 0
+    }
+    return textYMax-textYMin
+  }
+
   const optionsY = (textRef.current?.geometry?.boundingBox?.min?.y || 0)
-  const actualHeight = optionsHeight - optionsY + (padding*2)
+  // const actualHeight = optionsHeight - optionsY + (padding*2)
 
-  const boxHeight = Math.max(actualHeight, minHeight) // Max between this and actual Height
+  // const boxHeight = Math.max(actualHeight, minHeight) // Max between this and actual Height
 
-  const yActualHeightAdjustment = expandDirection === 'up' && actualHeight > minHeight ? actualHeight - minHeight : 0
-  const y2 = position[1] + yActualHeightAdjustment
+  // const yActualHeightAdjustment = expandDirection === 'up' && actualHeight > minHeight ? actualHeight - minHeight : 0
+  // const y2 = position[1] + yActualHeightAdjustment
 
-  const halfHeight = canvasHeight/2
-  const yOutOfBottomFrameAdjustment = y2 - boxHeight < -halfHeight ? (Math.abs(y2 - boxHeight) - halfHeight) : 0
-  const yOutOfTopFrameAdjustment = y2 > halfHeight ? -(y2 - halfHeight) : 0
+  // const halfHeight = canvasHeight/2
+  // const yOutOfBottomFrameAdjustment = y2 - boxHeight < -halfHeight ? (Math.abs(y2 - boxHeight) - halfHeight) : 0
+  // const yOutOfTopFrameAdjustment = y2 > halfHeight ? -(y2 - halfHeight) : 0
 
-  const y = y2 + yOutOfBottomFrameAdjustment + yOutOfTopFrameAdjustment
+  // const y = y2 + yOutOfBottomFrameAdjustment + yOutOfTopFrameAdjustment
 
   // const showIndicator = printingDone && current instanceof TextResult && !current.isDialogueEnd
 
@@ -135,8 +146,10 @@ const DialogueBox = ({
 
   // const characterBoxX = mapOverRange(placement, 0, 1, characterBoxOptions.width/2, width - characterBoxOptions.width/2)
 
-  return (<RoundedBox radius={borderRadius} args={[width, boxHeight, 0]} position={[width/2, -boxHeight/2 ,0]} material-color={backgroundColor} material-opacity={opacity} material-transparent>
-  <group position={[-width/2 + padding, boxHeight/2 - padding, 0]} >
+  const height = heightFixed ? _height : getTextHeight()
+
+  return (<RoundedBox radius={borderRadius} args={[width, height, 0]} position={[width/2, -height/2 ,0]} material-color={backgroundColor} material-opacity={opacity} material-transparent>
+  <group position={[-width/2 + padding, height/2 - padding, 0]} >
     <TeleprompterText
       line={text}
       onPrintEnd={onPrintEnd}
