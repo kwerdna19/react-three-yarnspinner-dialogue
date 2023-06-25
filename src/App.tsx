@@ -102,13 +102,16 @@ const chapters = [chapter1, chapter2]
 function Demo({ text }: { text: string }) {
 
   const w = useThree(s => s.size.width)
+  const h = useThree(s => s.size.height)
+
 
   return <>
     <Grid />
     <YarnDialogue
       yarn={text}
-      width={w/2}
-      position={[0, 0]}
+      width={w*0.5}
+      height={150}
+      position={[-0.25*w, 0]}
     />
   </>
 }

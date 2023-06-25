@@ -5,15 +5,16 @@ import useYarn from "../hooks/useYarn"
 import { RoundedBox } from '@react-three/drei'
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useThree } from '@react-three/fiber'
-import { Mesh, OrthographicCamera } from 'three'
+import { Box3, Mesh, OrthographicCamera, Vector3 } from 'three'
+import useTrigger from '../hooks/useTrigger';
 
 
 type DialogueBoxProps = {
   current: CurrentResult,
   advance: ReturnType<typeof useYarn>['advance'],
   setAllowedToAdvance: ReturnType<typeof useYarn>['setAllowedToAdvance'],
-  width?: number,
-  height?: number,
+  width: number,
+  height: number,
   position?: [number, number],
   padding?: number,
   expandDirection?: 'up' | 'down',
@@ -60,8 +61,8 @@ const DialogueBox = ({
   setAllowedToAdvance,
   textMode = 'letter',
   textSpeed = 6,
-  width: _width,
-  height: _height,
+  width,
+  height,
   position = [0,0],
   padding = 0,
   expandDirection = 'up',
@@ -79,21 +80,29 @@ const DialogueBox = ({
     throw new Error('Dialog component only works with THREE.js OrthographicCamera')
   }
 
+  const ref = useRef<Mesh>(null)
+
   const textRef = useRef<Mesh>(null)
 
   const [printingDone, setPrintingDone] = useState(false)
+  const [textHeight, setTextHeight] = useState(0)
   const [optionsHeight, setOptionsHeight] = useState(0)
 
-  const canvasWidth = useThree(s => s.size.width)
-  const canvasHeight = useThree(s => s.size.height)
-
-  const width = _width ?? canvasWidth
-
-  const heightFixed = _height !== undefined
 
   const text = current && 'text' in current ? current.text ?? '' : ''
   const showOptions = current && 'options' in current && printingDone
   const allowed = !(current && 'options' in current)
+
+  const moveOn = useCallback(() => {
+    console.log('move', { textHeight, height })
+    if(textHeight > height) {
+      // stuff
+      return
+    }
+    advance()
+  }, [advance, textHeight, height])
+
+  useTrigger(moveOn)
 
   const onPrintEnd = useCallback(() => {
     setAllowedToAdvance(allowed)
@@ -103,6 +112,21 @@ const DialogueBox = ({
   useEffect(() => {
     setPrintingDone(false)
   }, [text, setPrintingDone])
+
+  useEffect(() => {
+
+    if(!textRef.current) {
+      return
+    }
+    function onComplete() {
+      if(textRef.current) {
+        const h = new Box3().setFromObject(textRef.current).getSize(new Vector3()).y
+        setTextHeight(h)
+      }
+    }
+    textRef.current.addEventListener('synccomplete', onComplete)
+    return () => textRef.current?.removeEventListener('synccomplete', onComplete)
+  }, [])
 
   if(!text) {
     return null
@@ -144,11 +168,7 @@ const DialogueBox = ({
 
   // const placement = characterIndex > -1 ? characterIndex/characters.length : (characterBoxOptions.placement || 0)
 
-  // const characterBoxX = mapOverRange(placement, 0, 1, characterBoxOptions.width/2, width - characterBoxOptions.width/2)
-
-  const height = heightFixed ? _height : getTextHeight()
-
-  return (<RoundedBox radius={borderRadius} args={[width, height, 0]} position={[width/2, -height/2 ,0]} material-color={backgroundColor} material-opacity={opacity} material-transparent>
+  return (<RoundedBox ref={ref} radius={borderRadius} args={[width, height, 0]} position={[width/2, -height/2 ,0]} material-color={backgroundColor} material-opacity={opacity} material-transparent>
   <group position={[-width/2 + padding, height/2 - padding, 0]} >
     <TeleprompterText
       line={text}
@@ -160,6 +180,7 @@ const DialogueBox = ({
       mode={textMode}
       speed={textSpeed}
       color={fontColor}
+      maxHeight={height - 2*padding}
     />
     {showOptions && <OptionsPicker
         options={current.options}

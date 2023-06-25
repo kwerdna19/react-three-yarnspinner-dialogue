@@ -6,7 +6,8 @@ import { vector2ToTuple } from "../utils"
 
 type BaseYarnDialogueProps = {
   yarn: string,
-  width?: number,
+  width: number,
+  height: number
   position?: Vector2
 }
 
@@ -17,13 +18,11 @@ export default function YarnDialogue({
   skippable,
   defaultToFirstOption,
   position = [0, 0],
-  width: _width
+  width,
+  height
 }: YarnDialogProps) {
 
-  const canvasWidth = useThree(s => s.size.width)
-  const canvasHeight = useThree(s => s.size.height)
-
-  const width = _width !== undefined ? _width : canvasWidth
+  const [x, y] = vector2ToTuple(position)
 
   const {
     currentResult,
@@ -35,18 +34,21 @@ export default function YarnDialogue({
     defaultToFirstOption
   })
 
-  useTrigger(advance)
-
-  const [x, y] = vector2ToTuple(position)
-
   return <group position={[x, y, 0]}
   >
     <DialogueBox
       advance={advance}
       current={currentResult}
       setAllowedToAdvance={setAllowedToAdvance}
-      textMode="letter"
       width={width}
+      height={height}
+
+      // move up ---
+      textMode="word"
+      fontSize={30}
+      lineHeight={1.3}
+      textSpeed={3}
+      padding={5}
     />
   
   </group>
