@@ -27,3 +27,24 @@ export function vector2ToTuple(v?: Vector2) {
   }
   return [v.x, v.y] as const  
 }
+
+export function getPercentValue(pctString: string, range: number) {
+
+  const percent = parseInt(pctString)/100
+
+  if(isNaN(percent)) {
+    throw new Error('Invalid percent value')
+  }
+
+  return percent*range
+}
+
+export function getValueFromVariableInput(inputValue: string | number, range: number) {
+  if(typeof inputValue === 'string') {
+    return getPercentValue(inputValue, range)
+  }
+  if(inputValue > 0 && inputValue < 1) {
+    return inputValue*range
+  }
+  return inputValue
+ }

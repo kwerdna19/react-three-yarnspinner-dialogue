@@ -1,22 +1,27 @@
-// import { useThree } from "@react-three/fiber"
 import { useEffect } from "react"
 
 
 const useTrigger = (cb: () => void) => {
 
-  // const renderer = useThree(state => state.gl)
-
   useEffect(() => {
 
     function eventHandler(event: MouseEvent | KeyboardEvent) {
-      if('key' in event && ![' ', 'Enter'].includes(event.key)) {
-        return
+      if('key' in event) {
+        // keyboard event
+        if([' ', 'Enter'].includes(event.key)) {
+          // @TODO add more checking so other typing doesn't cause trigger
+          cb()
+        }
+      } else {
+        // mouse event
+        if(event.target && event.target instanceof HTMLCanvasElement) {
+          cb()
+        }
       }
-      cb()
+      
+
     }
     
-    // const element = renderer.domElement
-
     window.addEventListener('click', eventHandler)
     window.addEventListener('keydown', eventHandler)
     return () => {

@@ -1,7 +1,7 @@
-import { Canvas, useThree } from '@react-three/fiber'
-import Grid from './components/GridHelper'
+import { Canvas } from '@react-three/fiber'
 import YarnDialogue from './components/YarnDialogue'
 import { useState } from 'react'
+import DemoBox from './components/DemoBox'
 
 const chapter1 = `title: Start
 ---
@@ -100,20 +100,18 @@ const chapters = [chapter1, chapter2]
 
 function Demo({ text }: { text: string }) {
 
-  const w = useThree(s => s.size.width)
-  const h = useThree(s => s.size.height)
 
-
-  return <>
-    <Grid />
-    <YarnDialogue
+  return <YarnDialogue
       yarn={text}
-      width={w*0.5}
+      width="70%"
       height={150}
-      position={[-0.25*w, 0]}
-      padding={5}
+      transform={[0.5, 0]}
+      padding={10}
+      borderRadius={15}
+      fontSize={18}
+      bottom={40}
+      skippable
     />
-  </>
 }
 
 function App() {
@@ -122,7 +120,11 @@ function App() {
 
   return (
     <>
-      <Canvas camera={{position: [0,0,10]}} orthographic>
+      <Canvas>
+        <ambientLight />
+        <pointLight position={[10, 10, 10]} />
+        <DemoBox position={[-1.2, 0, 0]} />
+        <DemoBox position={[1.2, 0, 0]} />
         <Demo text={chapters[chapter]} />
       </Canvas>
       <div style={{ position: 'absolute', top: 12, right: 12 }}>

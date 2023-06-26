@@ -1,13 +1,12 @@
-import { GroupProps, Vector2 } from "@react-three/fiber"
-// import useTrigger from "../hooks/useTrigger"
-import { vector2ToTuple } from "../utils"
+import { Vector2, useThree } from "@react-three/fiber"
+import { getCharacter, getValueFromVariableInput, vector2ToTuple } from "../utils"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useYarnStore } from "../store"
-import { useNode, useYarnStorage } from "../hooks/useYarnStore"
+import { useNode } from "../hooks/useYarnStore"
 import useCommandHandler from "../hooks/useCommandHandler"
-import YarnBound from "yarn-bound"
+import YarnBound, { YarnStorage } from "yarn-bound"
 import TeleprompterText, { TeleprompterTextProps } from "./TeleprompterText"
-import { RoundedBox } from "@react-three/drei"
+import { Hud, OrthographicCamera, RoundedBox, Text } from "@react-three/drei"
 import { Mesh } from "three"
 import OptionsPicker from "./OptionsPicker"
 import useForceUpdate from "../hooks/useForceUpdate"
@@ -58,9 +57,10 @@ const yarnFunctions = {
 
 type BaseYarnDialogueProps = {
   yarn: string,
-  width: number,
-  height: number
+  width: number | string,
+  height: number | string
   position?: Vector2
+  transform?: [number | string, number | string]
   padding?: number,
   textMode?: TeleprompterTextProps['mode']
   textSpeed?: TeleprompterTextProps['speed'],
@@ -71,19 +71,28 @@ type BaseYarnDialogueProps = {
   borderRadius?: number,
   fontColor?: string
   optionsFontColor?: string,
+  optionsLineHeight?: number
   skippable?: boolean,
   defaultToFirstOption?: boolean,
+  storage?: YarnStorage,
+  startNode?: string,
+  commands?: Parameters<typeof useCommandHandler>[0],
+  bottom?: number | string,
+  top?: number | string,
+  left?: number | string,
+  right?: number | string,
 }
 
-export type YarnDialogProps = BaseYarnDialogueProps & Omit<GroupProps, keyof BaseYarnDialogueProps>
+export type YarnDialogProps = BaseYarnDialogueProps
 
 export default function YarnDialogue({
   yarn,
-  width,
-  height,
+  width: inputWidth,
+  height: inputHeight,
   skippable = false,
   defaultToFirstOption = false,
   position = [0, 0],
+  transform,
   opacity = 1,
   fontColor = 'black',
   fontSize = 16,
@@ -91,11 +100,20 @@ export default function YarnDialogue({
   borderRadius = 0,
   textMode = 'letter',
   textSpeed = 6,
-  lineHeight = 1,
+  lineHeight = 1.25,
+  optionsLineHeight,
   optionsFontColor,
   backgroundColor,
-  ...rest
+  storage,
+  startNode = 'Start',
+  commands,
+  bottom, top, left, right
 }: YarnDialogProps) {
+
+  const { size: { width: canvasWidth, height: canvasHeight } } = useThree()
+
+  const width = getValueFromVariableInput(inputWidth, canvasWidth)
+  const height = getValueFromVariableInput(inputHeight, canvasHeight)
 
   const textRef = useRef<Mesh>(null)
   const [printingDone, setPrintingDone] = useState(false)
@@ -103,59 +121,86 @@ export default function YarnDialogue({
 
   const update = useForceUpdate()
 
-  const [node, setNode] = useNode()
-  const storage = useYarnStorage()
-  const handleCommand = useCommandHandler()
+  const [,setNode] = useNode()
 
-  const gameRef = useRef(new YarnBound({
-    startAt: 'Start',
-    dialogue: yarn,
-    combineTextAndOptionsResults: true,
-    variableStorage: storage,
-    functions: yarnFunctions,
-    handleCommand: handleCommand
-  }))
+  const handleCommand = useCommandHandler(commands)
+
+  const gameRef = useRef<YarnBound | null>(null)
+
+  useEffect(() => {
+    console.log("INIT YARNBOUND")
+    gameRef.current = new YarnBound({
+      startAt: startNode,
+      dialogue: yarn,
+      combineTextAndOptionsResults: true,
+      variableStorage: storage,
+      functions: yarnFunctions,
+      handleCommand
+    })
+    setPrintingDone(false)
+    setShowOptions(false)
+    update()
+  }, [yarn, storage, handleCommand, update, startNode, setPrintingDone, setShowOptions])
 
   const advance = useCallback((step?: number) => {
+    const runner = gameRef.current
+    if(!runner) {
+      return
+    }
     if(!printingDone) {
-      if(skippable) {
+      if(skippable && !runner.currentResult?.isDialogueEnd) {
         setPrintingDone(true)
       }
       return
     }
-    const runner = gameRef.current
-    console.log('--- advance', step)
     if(runner.currentResult && 'options' in runner.currentResult && step === undefined) {
-      console.log('skipping because no step passed in')
       return 
     }
-    // if(step !== undefined) {
-    //   // coming from a manual handler (option select probably)
-    //   isAllowedToAdvance.current = true
-    // }
-    // if(!isAllowedToAdvance.current && !skippable) {
-    //     return
-    // }
-    // isAllowedToAdvance.current = false
+    console.log('--- advance!')
     runner.advance(step)
     if(runner.currentResult && 'metadata' in runner.currentResult && runner.currentResult.metadata?.title) {
       setNode(runner.currentResult?.metadata?.title)
     }
-    update()
-  }, [update, setNode, printingDone, skippable])
+    setPrintingDone(false)
+    setShowOptions(false)
+  }, [setNode, printingDone, skippable, setPrintingDone, setShowOptions])
 
 
-  const current = gameRef.current.currentResult
-  // const character = getCharacter(currentResult)
+  const getPos = () => {
 
-  const [x, y] = vector2ToTuple(position)
+    let [x, y] = vector2ToTuple(position)
+    const xTransform = (transform ? -1*getValueFromVariableInput(transform[0], width) : 0)
+    const yTransform = (transform ? getValueFromVariableInput(transform[1], height) : 0)
 
+    if(bottom !== undefined) {
+      y = -canvasHeight/2 + height + getValueFromVariableInput(bottom, canvasHeight) - yTransform
+    } else if (top !== undefined) {
+      y = canvasHeight/2 - getValueFromVariableInput(top, canvasHeight) + yTransform
+    } else {
+      y += yTransform
+    }
 
+    if(left !== undefined) {
+      x = -canvasWidth/2 + getValueFromVariableInput(left, canvasWidth) + xTransform
+    } else if (right !== undefined) {
+      x = canvasWidth/2 - width - getValueFromVariableInput(right, canvasWidth) + xTransform
+    } else {
+      x += xTransform
+    }
 
+    return { x, y }
+  }
+
+  const { x, y } = getPos()
+
+  const current = gameRef.current?.currentResult
   const hasOptions = current && 'options' in current
 
   const hasText =  current && 'text' in current
-  const text = hasText ? current.text ?? '' : ''
+  const text = hasText ? current.text : undefined
+
+  const character = getCharacter(current)
+
 
   useEffect(() => {
     if(!printingDone) {
@@ -169,59 +214,70 @@ export default function YarnDialogue({
 
   useTrigger(advance)
 
+  const optionsY = (textRef.current?.geometry?.boundingBox?.min?.y || 0) - (lineHeight*fontSize*0.5)
 
-  useEffect(() => {
-    setPrintingDone(false)
-    setShowOptions(false)
-  }, [text])
 
-  const optionsY = (textRef.current?.geometry?.boundingBox?.min?.y || 0)
+  if(current?.isDialogueEnd) {
+    return null
+  }
 
-  return <group position={[x, y, 0]} {...rest}>
-    <RoundedBox radius={borderRadius} args={[width, height, 0]} position={[width/2, -height/2 ,0]} material-color={backgroundColor} material-opacity={opacity} material-transparent>
-  <group position={[-width/2 + padding, height/2 - padding, 0]} >
-    <TeleprompterText
-      line={text}
-      printingDone={printingDone}
-      setPrintingDone={setPrintingDone}
-      fontSize={fontSize}
-      lineHeight={lineHeight}
-      ref={textRef}
-      mode={textMode}
-      speed={textSpeed}
-      color={fontColor}
-      maxWidth={width - 2*padding}
-      maxHeight={height - 2*padding}
-      skippable={skippable}
-    />
-    {showOptions && hasOptions && <OptionsPicker
-        options={current.options}
-        onSelection={advance}
-        speed={textSpeed}
+  const charBoxWidth = width / 3.5
+  const charBoxHeight = fontSize*2.25
+
+  return <Hud>
+  <OrthographicCamera makeDefault position={[0,0,5]} />
+  <group position={[x, y, 0]}>
+      {character ? <RoundedBox
+        radius={charBoxHeight/2}
+        args={[charBoxWidth, charBoxHeight, 1]}
+        position={[charBoxWidth/2, charBoxHeight*0.5*1.5, 1]}
+        material-color={backgroundColor}
+        material-opacity={opacity}
+        material-transparent
+      >
+      <Text
         fontSize={fontSize}
-        fontColor={optionsFontColor ?? fontColor}
-        position={[0, optionsY, 1]}
-
-        defaultToFirstOption={defaultToFirstOption}
-    />}
+        lineHeight={lineHeight}
+        color={fontColor}
+        position={[0,0,1]}
+      >
+        {character}
+      </Text>
+    </RoundedBox> : null}
+    <RoundedBox
+      radius={borderRadius}
+      args={[width, height, 1]}
+      position={[width/2, -height/2 ,0]}
+      material-color={backgroundColor}
+      material-opacity={opacity}
+      material-transparent
+    >
+    <group position={[-width/2 + padding, height/2 - padding, 0]} >
+      <TeleprompterText
+        line={text}
+        printingDone={printingDone}
+        setPrintingDone={setPrintingDone}
+        fontSize={fontSize}
+        lineHeight={lineHeight}
+        ref={textRef}
+        mode={textMode}
+        speed={textSpeed}
+        color={fontColor}
+        maxWidth={width - 2*padding}
+        maxHeight={height - 2*padding}
+      />
+      {showOptions && hasOptions && <OptionsPicker
+          options={current.options}
+          onSelection={advance}
+          speed={textSpeed}
+          fontSize={fontSize}
+          lineHeight={optionsLineHeight ?? lineHeight}
+          fontColor={optionsFontColor ?? fontColor}
+          position={[0, optionsY]}
+          defaultToFirstOption={defaultToFirstOption}
+      />}
+    </group>
+  </RoundedBox>  
   </group>
-</RoundedBox>
-
-    {/* <DialogueBox
-      advance={advance}
-      current={currentResult}
-      width={width}
-      height={height}
-      defaultToFirstOption={defaultToFirstOption}
-      skippable={skippable}
-
-      // move up ---
-      textMode="word"
-      fontSize={16}
-      lineHeight={1.3}
-      textSpeed={4}
-      padding={5}
-    /> */}
-  
-  </group>
+  </Hud>
 }

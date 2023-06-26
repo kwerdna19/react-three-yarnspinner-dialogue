@@ -46,6 +46,11 @@ declare module 'yarn-bound' {
 
   export type CurrentResult = TextResult | CommandResult | OptionsResult | undefined
 
+  export type YarnStorage = {
+    get: (key: string) => Primitive,
+    set: (key: string, val: Primitive) => void
+  }
+
   export default class YarnBound {
 
     public currentResult: CurrentResult
@@ -56,10 +61,7 @@ declare module 'yarn-bound' {
       combineTextAndOptionsResults?: boolean,
       handleCommand?: (command: CommandResult) => void,
       functions?: { [functionName: string]: YarnFunction }
-      variableStorage?: {
-        get: (key: string) => Primitive,
-        set: (key: string, val: Primitive) => void
-      }
+      variableStorage?: YarnStorage
     })
 
     advance(step?: number): void

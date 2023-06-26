@@ -1,18 +1,19 @@
 import { Text } from "@react-three/drei"
-import { Vector3 } from "@react-three/fiber"
+import { Vector2 } from "@react-three/fiber"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { OptionResult } from 'yarn-bound'
 import { Box3, Group, Vector3 as Vector } from 'three'
-import { useOptions } from "../hooks/useYarnStore"
+import { vector2ToTuple } from "../utils"
 
 // range from 1-10 (technically 0.1 - 500)
 
 type Props = {
   fontSize?: number,
+  lineHeight?: number,
   speed?: number,
   options: OptionResult[]
   onSelection: (selectionIndex: number) => void,
-  position?: Vector3,
+  position?: Vector2,
   onHeightMeasure?: (height: number) => void
   fontColor?: string
   defaultToFirstOption?: boolean
@@ -20,6 +21,7 @@ type Props = {
 
 const OptionsPicker = ({
   fontSize = 16,
+  lineHeight = 1,
   fontColor,
   options,
   onSelection,
@@ -27,6 +29,8 @@ const OptionsPicker = ({
   onHeightMeasure,
   defaultToFirstOption = false
 }: Props) => {
+
+  const [x,y] = vector2ToTuple(position)
 
   const ref = useRef<Group>(null)
 
@@ -47,7 +51,6 @@ const OptionsPicker = ({
   const numOptions = options.length
 
   const keyboardControlHandler = useCallback((event: KeyboardEvent) => {
-
     if(event.key === 'ArrowDown') {
       setSelectedIndex(s => {
         if(s === null) {
@@ -74,6 +77,10 @@ const OptionsPicker = ({
       setSelectedIndex(defaultSelection)
     }
 
+    if(event.key === 'Escape') {
+      setSelectedIndex(null)
+    }
+
   }, [onSelection, selectedIndex, setSelectedIndex, numOptions, defaultSelection])
   
   useEffect(() => {
@@ -83,13 +90,7 @@ const OptionsPicker = ({
     }
   }, [keyboardControlHandler])
 
-  return ( <group position={position} ref={ref} onAfterRender={() => {
-    if(ref.current) {
-      const newHeight = new Box3().setFromObject(ref.current).getSize(new Vector()).y;
-      console.log('newHeight', newHeight)
-      onHeightMeasure?.(newHeight)
-    }
-  }}>
+  return ( <group position={[x,y,1]} ref={ref}>
     {options.map((o, i) => {
       const isSelected = selectedIndex === i
       return <Text
@@ -99,8 +100,9 @@ const OptionsPicker = ({
         outlineWidth={isSelected ? '2%' : 0}
         onClick={() => onSelection(i)}
         onPointerOver={() => setSelectedIndex(i)}
-        anchorX="left" anchorY="top"
-        position={[0, -1.25*fontSize*i, 0]}
+        anchorX="left"
+        anchorY="top"
+        position={[0, -1*lineHeight*fontSize*i, 0]}
     >
       {isSelected ? '> ' : ''}{o.text}
     </Text>

@@ -11,14 +11,13 @@ import { vector2ToTuple } from "../utils"
 type TextProps = ComponentProps<typeof Text>
 
 type BaseTeleprompterTextProps = {
-  line: string,
+  line?: string | undefined,
   speed?: number,
   setPrintingDone: (done: boolean) => void,
   printingDone: boolean,
   mode?: 'word' | 'letter' | 'instant',
   position?: Vector2,
-  maxHeight?: number,
-  skippable?: boolean
+  maxHeight?: number
 }
 
 export type TeleprompterTextProps = BaseTeleprompterTextProps & Omit<TextProps, 'anchorX' | 'anchorY' | 'ref' | 'children' | keyof BaseTeleprompterTextProps>
@@ -34,7 +33,6 @@ const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
   fontSize = 16,
   maxHeight = 0,
   maxWidth = 0,
-  skippable = false,
   ...textProps
 }: TeleprompterTextProps, ref) => {
 
@@ -44,7 +42,7 @@ const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
     const maxLines = maxHeight !== 0 ? Math.floor(maxHeight / lineSize) : Infinity
     const trueMaxHeight = maxLines * lineSize
 
-    const elements = mode === 'instant' ? [line] : line.split(mode === 'word' ? ' ' : '')
+    const elements = line === undefined ? [] : (mode === 'instant' ? [line] : line.split(mode === 'word' ? ' ' : ''))
     const totalElements = elements.length
 
     const wordDur = 500/speed // in ms
@@ -68,7 +66,7 @@ const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
       setElementNum(0)
     }, [line, setElementNum])
 
-    const isDone = text === line || isCutoff.current
+    const isDone = line !== undefined && (text === line || isCutoff.current)
 
     useEffect(() => {
       if(isDone) {
