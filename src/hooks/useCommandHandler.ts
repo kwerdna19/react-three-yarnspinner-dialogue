@@ -49,7 +49,7 @@ const useCommandHandler = () => {
     if(commandMap[cmd]) {
       commandMap[cmd](...args.map(parseStringArg))
     } else {
-      console.error(`Attempted to use a command which is not implemented: "${cmd}"`)
+      console.warn(`Attempted to use a command which is not implemented: "${cmd}"`)
     }
   }
 

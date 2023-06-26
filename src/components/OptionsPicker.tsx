@@ -15,6 +15,7 @@ type Props = {
   position?: Vector3,
   onHeightMeasure?: (height: number) => void
   fontColor?: string
+  defaultToFirstOption?: boolean
 }
 
 const OptionsPicker = ({
@@ -23,7 +24,8 @@ const OptionsPicker = ({
   options,
   onSelection,
   position,
-  onHeightMeasure
+  onHeightMeasure,
+  defaultToFirstOption = false
 }: Props) => {
 
   const ref = useRef<Group>(null)
@@ -40,15 +42,12 @@ const OptionsPicker = ({
     }
   }, [onHeightMeasure])
 
-  const { defaultSelectFirstOptions } = useOptions()
-  const [selectedIndex, setSelectedIndex] = useState(defaultSelectFirstOptions ? 0 : null)
+  const defaultSelection = defaultToFirstOption ? 0 : null
+  const [selectedIndex, setSelectedIndex] = useState(defaultSelection)
   const numOptions = options.length
 
   const keyboardControlHandler = useCallback((event: KeyboardEvent) => {
 
-    if(![' ', 'Enter', 'ArrowDown', 'ArrowUp'].includes(event.key)) {
-        return
-    }
     if(event.key === 'ArrowDown') {
       setSelectedIndex(s => {
         if(s === null) {
@@ -67,13 +66,15 @@ const OptionsPicker = ({
       })
       return
     }
-    if(selectedIndex !== null) {
-      onSelection(selectedIndex)
-      setSelectedIndex(defaultSelectFirstOptions ? 0 : null)
-    } else {
-      setSelectedIndex(0)
+
+    if([' ', 'Enter'].includes(event.key)) {
+      if(selectedIndex !== null) {
+        onSelection(selectedIndex)
+      }
+      setSelectedIndex(defaultSelection)
     }
-  }, [onSelection, selectedIndex, setSelectedIndex, numOptions, defaultSelectFirstOptions])
+
+  }, [onSelection, selectedIndex, setSelectedIndex, numOptions, defaultSelection])
   
   useEffect(() => {
     window.addEventListener('keydown', keyboardControlHandler)
@@ -82,7 +83,13 @@ const OptionsPicker = ({
     }
   }, [keyboardControlHandler])
 
-  return ( <group position={position} ref={ref}>
+  return ( <group position={position} ref={ref} onAfterRender={() => {
+    if(ref.current) {
+      const newHeight = new Box3().setFromObject(ref.current).getSize(new Vector()).y;
+      console.log('newHeight', newHeight)
+      onHeightMeasure?.(newHeight)
+    }
+  }}>
     {options.map((o, i) => {
       const isSelected = selectedIndex === i
       return <Text
@@ -95,7 +102,7 @@ const OptionsPicker = ({
         anchorX="left" anchorY="top"
         position={[0, -1.25*fontSize*i, 0]}
     >
-      {isSelected ? '-> ' : ''}{o.text}
+      {isSelected ? '> ' : ''}{o.text}
     </Text>
     })}
   </group>)

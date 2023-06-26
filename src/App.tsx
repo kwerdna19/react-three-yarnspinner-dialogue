@@ -8,7 +8,6 @@ const chapter1 = `title: Start
 Companion: Hi there! What do you feel like doing today? What if this was a really really long line? What would happen? We need to wrap the text to new line or lines? What would happen? We need to wrap the text to new line or lines?
 <<log 3 4 5 true test "true">>
 Gambler: My lucky number is {random_range(1,10)}!
-<<alert "test message">>
 Debug: I have visited Start this many times: {visited_count("Start")}
 Debug: I have visited swimming: {visited("Swimming")}
 -> Player: I want to go swimming.
@@ -112,6 +111,7 @@ function Demo({ text }: { text: string }) {
       width={w*0.5}
       height={150}
       position={[-0.25*w, 0]}
+      padding={5}
     />
   </>
 }

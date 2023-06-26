@@ -13,10 +13,12 @@ type TextProps = ComponentProps<typeof Text>
 type BaseTeleprompterTextProps = {
   line: string,
   speed?: number,
-  onPrintEnd?: (returnedEarly?: boolean) => void,
+  setPrintingDone: (done: boolean) => void,
+  printingDone: boolean,
   mode?: 'word' | 'letter' | 'instant',
   position?: Vector2,
-  maxHeight?: number
+  maxHeight?: number,
+  skippable?: boolean
 }
 
 export type TeleprompterTextProps = BaseTeleprompterTextProps & Omit<TextProps, 'anchorX' | 'anchorY' | 'ref' | 'children' | keyof BaseTeleprompterTextProps>
@@ -24,23 +26,23 @@ export type TeleprompterTextProps = BaseTeleprompterTextProps & Omit<TextProps, 
 const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
   line,
   speed = 6,
-  onPrintEnd,
+  setPrintingDone,
+  printingDone,
   position,
   mode = 'word',
   lineHeight = 1.25,
   fontSize = 16,
   maxHeight = 0,
   maxWidth = 0,
+  skippable = false,
   ...textProps
 }: TeleprompterTextProps, ref) => {
 
+    const isCutoff = useRef(false)
     const lineSize = lineHeight*fontSize
 
     const maxLines = maxHeight !== 0 ? Math.floor(maxHeight / lineSize) : Infinity
-
     const trueMaxHeight = maxLines * lineSize
-
-    const numLines = useRef(0)
 
     const elements = mode === 'instant' ? [line] : line.split(mode === 'word' ? ' ' : '')
     const totalElements = elements.length
@@ -52,45 +54,35 @@ const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
 
     const [elementNum, setElementNum] = useState(0)
 
-    // const onTrigger = useCallback(() => {
-    //   setElementNum(totalElements)
-    // }, [setElementNum, totalElements])
-  
-    // useTrigger(onTrigger)
+    const joinChar = mode === 'word' ? ' ' : ''
+    const text = elements.slice(0, elementNum).join(joinChar)
+
+    useEffect(() => {
+      if(printingDone) {
+        setElementNum(totalElements)
+      }
+    }, [printingDone, setElementNum, totalElements])
   
     useEffect(() => {
+      isCutoff.current = false
       setElementNum(0)
     }, [line, setElementNum])
 
+    const isDone = text === line || isCutoff.current
+
     useEffect(() => {
-      if(elementNum >= totalElements) {
-        onPrintEnd?.()
+      if(isDone) {
+        setPrintingDone(true)
         return
       }
-      const t = setTimeout(() => {
+      const t = setInterval(() => {
         setElementNum(e => e + 1)
       }, elementDur)
-      return () => clearTimeout(t)
-    }, [elementDur, elementNum, totalElements, setElementNum, onPrintEnd])
+      return () => clearInterval(t)
+    }, [elementDur, isDone, setElementNum, setPrintingDone])
   
-    const text = elements.slice(0, elementNum).join(mode === 'word' ? ' ' : '')
-
     const [x,y] = vector2ToTuple(position)
 
-
-    // useEffect(() => {
-    //   if(!ref || typeof ref === 'function' || !ref.current) {
-    //     return
-    //   }
-    //   const node = ref.current
-    //   function onComplete() {
-    //     const h = new Box3().setFromObject(node).getSize(new Vector3()).y
-    //     console.log(node, h)
-    //   }
-    //   node.addEventListener('synccomplete', onComplete)
-    //   return () => node.removeEventListener('synccomplete', onComplete)
-    // }, [])
-  
     return (<Text
       ref={ref}
       position={[x,y,1]}
@@ -99,19 +91,13 @@ const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
       fontSize={fontSize}
       lineHeight={lineHeight}
       maxWidth={maxWidth}
-      // clipRect={[-200, -200, maxWidth, 200]}
       clipRect={[0, -trueMaxHeight, maxWidth, 0]}
-      // overflowWrap="break-word"
-
-      onAfterRender={() => {
+      onSync={() => {
         if(typeof ref !== 'function' && ref && ref.current) {
           const height = new Box3().setFromObject(ref.current).getSize(new Vector3()).y
-          const lines = (height / (lineHeight*fontSize))
-          console.log({height, maxHeight, lines, maxLines })
-
-          numLines.current = lines
-          if(height > maxHeight) {
-            // do something
+          if(height > maxHeight && !isCutoff.current) {
+            isCutoff.current = true
+            console.warn(`The following text is being cut off:\n"${line}"`)
           }
         }
       }}
