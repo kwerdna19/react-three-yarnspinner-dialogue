@@ -1,7 +1,6 @@
 import { Vector2, useThree } from "@react-three/fiber"
 import { getCharacter, getValueFromVariableInput, vector2ToTuple } from "../utils"
-import { ComponentProps, useCallback, useEffect, useRef, useState } from "react"
-import { useNode } from "../hooks/useYarnStore"
+import { ComponentProps, forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react"
 import useCommandHandler from "../hooks/useCommandHandler"
 import YarnBound, { YarnStorage } from "yarn-bound"
 import TeleprompterText, { TeleprompterTextProps } from "./TeleprompterText"
@@ -9,8 +8,9 @@ import { Hud, OrthographicCamera, RoundedBox, Text } from "@react-three/drei"
 import { Mesh } from "three"
 import OptionsPicker from "./OptionsPicker"
 import useForceUpdate from "../hooks/useForceUpdate"
-import useTrigger from "../hooks/useTrigger"
 import { yarnFunctions } from "./yarn-functions"
+import { useYarnStore } from "../store"
+import MoreIndicator from "./MoreIndicator"
 
 type RoundedBoxProps = ComponentProps<typeof RoundedBox>
 
@@ -27,6 +27,7 @@ export type CharacterLabelAttributes = {
 
 export type YarnDialogProps = {
   yarn: string,
+  advanceOnClick?: boolean,
   width: number | string,
   height: number | string
   position?: Vector2
@@ -58,7 +59,11 @@ export type YarnDialogProps = {
   }) => CharacterLabelAttributes | undefined
 }
 
-export default function YarnDialogue({
+export type YarnDialogue = {
+  advance: (step?: number) => void
+}
+
+export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
   yarn,
   width: inputWidth,
   height: inputHeight,
@@ -78,11 +83,12 @@ export default function YarnDialogue({
   optionsFontColor,
   backgroundColor = 'lightgray',
   storage,
-  startNode = 'Start',
+  startNode,
   commands,
   bottom, top, left, right,
-  getCharacterLabelAttributes = () => undefined
-}: YarnDialogProps) {
+  getCharacterLabelAttributes = () => undefined,
+  advanceOnClick = false
+}: YarnDialogProps, ref) => {
 
   const { size: { width: canvasWidth, height: canvasHeight } } = useThree()
 
@@ -94,8 +100,7 @@ export default function YarnDialogue({
   const [showOptions, setShowOptions] = useState(false)
 
   const update = useForceUpdate()
-
-  const [,setNode] = useNode()
+  const setNode = useYarnStore(state => state.setNode)
 
   const handleCommand = useCommandHandler(commands)
 
@@ -104,7 +109,7 @@ export default function YarnDialogue({
   useEffect(() => {
     console.log("INIT YARNBOUND")
     gameRef.current = new YarnBound({
-      startAt: startNode,
+      startAt: startNode ?? useYarnStore.getState().node,
       dialogue: yarn,
       combineTextAndOptionsResults: true,
       variableStorage: storage,
@@ -137,8 +142,14 @@ export default function YarnDialogue({
     }
     setPrintingDone(false)
     setShowOptions(false)
-  }, [setNode, printingDone, skippable, setPrintingDone, setShowOptions])
+    update()
+  }, [setNode, printingDone, skippable, setPrintingDone, setShowOptions, update])
 
+  useImperativeHandle(ref, () => {
+    return {
+      advance: (step?: number) => advance(step)
+    }
+  }, [advance]);
 
   const getPosition = () => {
 
@@ -186,8 +197,6 @@ export default function YarnDialogue({
     return () => clearTimeout(t)
   }, [printingDone, setShowOptions, textSpeed])
 
-  useTrigger(advance)
-
   const optionsY = (textRef.current?.geometry?.boundingBox?.min?.y || 0) - (lineHeight*fontSize*0.5)
 
 
@@ -205,9 +214,16 @@ export default function YarnDialogue({
   const charBoxHeight = charBoxOptions.height ?? (fontSize*2.25)
   const charBoxX = (charBoxOptions.x ?? 0) + charBoxWidth/2
   const charBoxY = charBoxOptions.y !== undefined ? (charBoxHeight*0.5 + charBoxOptions.y) : (charBoxHeight*0.5 + fontSize/2)
-  return <Hud>
+
+  const showMoreIndicator = printingDone && !hasOptions
+
+  return (<Hud>
   <OrthographicCamera makeDefault position={[0,0,5]} />
-  <group position={[x, y, 0]}>
+  <group position={[x, y, 0]} onClick={() => {
+    if(!hasOptions && advanceOnClick) {
+      advance()
+    }
+  }}>
       {character ? <RoundedBox
         radius={charBoxHeight/2}
         args={[charBoxWidth, charBoxHeight, 1]}
@@ -225,6 +241,7 @@ export default function YarnDialogue({
         {character}
       </Text>
     </RoundedBox> : null}
+    {showMoreIndicator && <MoreIndicator color={fontColor} position={[width/2, -height]} />}
     <RoundedBox
       radius={borderRadius}
       args={[width, height, 1]}
@@ -260,5 +277,7 @@ export default function YarnDialogue({
     </group>
   </RoundedBox>  
   </group>
-  </Hud>
-}
+  </Hud>)
+
+
+});

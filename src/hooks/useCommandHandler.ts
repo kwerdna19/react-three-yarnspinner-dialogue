@@ -18,10 +18,10 @@ const parseStringArg = (a: string) => {
   if(a === 'null') {
     return null
   }
-  // handle default case?
   return a
 }
 
+// browser APIs, pure commands, etc
 const baseCommandMap = {
   log: (...args) => {
     console.log(...args)
@@ -44,7 +44,7 @@ const useCommandHandler = (additionalCommandsMap?: CommandMap) => {
       printCanvasSize: () => {
         console.log(`${three.size.width}x${three.size.height}`)
       }
-      // @TBA add more built in
+      // @TBA add more built in three commands
     } satisfies CommandMap
     
     return {
