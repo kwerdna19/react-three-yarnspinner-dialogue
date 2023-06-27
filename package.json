@@ -1,6 +1,6 @@
 {
   "name": "react-three-yarnspinner-dialogue",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "files": [
     "dist"
@@ -42,5 +42,22 @@
     "typescript": "^5.0.2",
     "vite": "^4.3.9",
     "vite-plugin-dts": "^2.3.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kwerdna19/react-three-yarnspinner-dialogue.git"
+  },
+  "keywords": [
+    "react",
+    "three",
+    "fiber",
+    "yarnspinner",
+    "react three fiber",
+    "dialog",
+    "dialogue",
+    "speech",
+    "game",
+    "text adventure"
+  ],
+  "license": "MIT License"
 }
