@@ -19,3 +19,27 @@ A text scrolling dialog box for story-game-style dialog or narration.
 ## Usage
 
 ### <YarnDialogue\/>
+
+- TBD: add props
+
+
+## Example
+
+```tsx
+  <YarnDialogue
+    yarn={exampleYarn}
+    width="70%"
+    height={150}
+    transform={[0.5, 0]}
+    padding={10}
+    bottom={40}
+    skippable
+    getCharacterLabelAttributes={({character}) => {
+      if(character === 'Companion') {
+        return {
+          labelColor: 'red',
+        }
+      }
+    }}
+  />
+```
