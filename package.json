@@ -1,10 +1,11 @@
 {
   "name": "react-three-yarnspinner-dialogue",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "files": [
     "dist"
   ],
+  "types": "./dist/react-three-yarnspinner-dialogue.d.ts",
   "main": "./dist/react-three-yarnspinner-dialogue.umd.cjs",
   "module": "./dist/react-three-yarnspinner-dialogue.js",
   "exports": {
@@ -40,6 +41,6 @@
     "eslint-plugin-react-refresh": "^0.3.4",
     "typescript": "^5.0.2",
     "vite": "^4.3.9",
-    "vite-plugin-dts": "^3.0.0-beta.1"
+    "vite-plugin-dts": "^2.3.0"
   }
 }

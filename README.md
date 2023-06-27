@@ -11,9 +11,9 @@ A text scrolling dialog box for story-game-style dialog or narration.
 ## Installation
 
 ```
- npm i ..
+ npm i react-three-yarnspinner-dialogue
  # or
- yarn add ...
+ yarn add react-three-yarnspinner-dialogue
 ```
 
 ## Usage
