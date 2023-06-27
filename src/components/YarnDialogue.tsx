@@ -1,7 +1,6 @@
 import { Vector2, useThree } from "@react-three/fiber"
 import { getCharacter, getValueFromVariableInput, vector2ToTuple } from "../utils"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { useYarnStore } from "../store"
+import { ComponentProps, useCallback, useEffect, useRef, useState } from "react"
 import { useNode } from "../hooks/useYarnStore"
 import useCommandHandler from "../hooks/useCommandHandler"
 import YarnBound, { YarnStorage } from "yarn-bound"
@@ -11,51 +10,22 @@ import { Mesh } from "three"
 import OptionsPicker from "./OptionsPicker"
 import useForceUpdate from "../hooks/useForceUpdate"
 import useTrigger from "../hooks/useTrigger"
+import { yarnFunctions } from "./yarn-functions"
 
-// https://docs.yarnspinner.dev/getting-started/writing-in-yarn/functions
-const yarnFunctions = {
-  visited: (nodeName: string) => {
-    return useYarnStore.getState().nodeVisitsMap[nodeName] > 0
-  },
-  visited_count: (nodeName: string) => {
-    return useYarnStore.getState().nodeVisitsMap[nodeName] || 0
-  },
-  random: Math.random,
-  random_range: (low: number, high: number) => {
-    const min = Math.ceil(low);
-    const max = Math.floor(high);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  },
-  dice: (high = 6) => {
-    const max = Math.floor(high)
-    return Math.floor(Math.random()*max) + 1
-  },
-  round: Math.round,
-  round_places: (num: number, places: number) => {
-    const multiplier = 10^places;
-    return Math.round(num * multiplier) / multiplier;
-  },
-  floor: Math.floor,
-  ceil: Math.ceil,
-  inc: (num: number) => {
-    const c = Math.ceil(num)
-    return c === num ? num + 1 : num
-  },
-  dec: (num: number) => {
-    const f = Math.floor(num)
-    return f === num ? num - 1 : num
-  },
-  decimal: (num: number) => {
-    return num - Math.floor(num)
-  },
-  int: (num: number) => {
-    const f = Math.floor(num)
-    return Math.max(0, f)
-  }
-}
+type RoundedBoxProps = ComponentProps<typeof RoundedBox>
 
+export type CharacterLabelAttributes = {
+  x?: number,
+  y?: number,
+  bg?: string,
+  width?: number,
+  height?: number,
+  opacity?: number,
+  labelColor?: string,
+  labelSize?: number
+} & Pick<RoundedBoxProps, 'radius'>
 
-type BaseYarnDialogueProps = {
+export type YarnDialogProps = {
   yarn: string,
   width: number | string,
   height: number | string
@@ -81,9 +51,12 @@ type BaseYarnDialogueProps = {
   top?: number | string,
   left?: number | string,
   right?: number | string,
+  getCharacterLabelAttributes?: (input: {
+    character: string | undefined | null,
+    boxWidth: number,
+    boxHeight: number
+  }) => CharacterLabelAttributes | undefined
 }
-
-export type YarnDialogProps = BaseYarnDialogueProps
 
 export default function YarnDialogue({
   yarn,
@@ -103,11 +76,12 @@ export default function YarnDialogue({
   lineHeight = 1.25,
   optionsLineHeight,
   optionsFontColor,
-  backgroundColor,
+  backgroundColor = 'lightgray',
   storage,
   startNode = 'Start',
   commands,
-  bottom, top, left, right
+  bottom, top, left, right,
+  getCharacterLabelAttributes = () => undefined
 }: YarnDialogProps) {
 
   const { size: { width: canvasWidth, height: canvasHeight } } = useThree()
@@ -166,7 +140,7 @@ export default function YarnDialogue({
   }, [setNode, printingDone, skippable, setPrintingDone, setShowOptions])
 
 
-  const getPos = () => {
+  const getPosition = () => {
 
     let [x, y] = vector2ToTuple(position)
     const xTransform = (transform ? -1*getValueFromVariableInput(transform[0], width) : 0)
@@ -191,7 +165,7 @@ export default function YarnDialogue({
     return { x, y }
   }
 
-  const { x, y } = getPos()
+  const { x, y } = getPosition()
 
   const current = gameRef.current?.currentResult
   const hasOptions = current && 'options' in current
@@ -221,24 +195,31 @@ export default function YarnDialogue({
     return null
   }
 
-  const charBoxWidth = width / 3.5
-  const charBoxHeight = fontSize*2.25
+  const charBoxOptions = getCharacterLabelAttributes({
+    boxHeight: height,
+    boxWidth: width,
+    character: character
+  }) ?? {}
 
+  const charBoxWidth = charBoxOptions.width ?? (width / 3.5)
+  const charBoxHeight = charBoxOptions.height ?? (fontSize*2.25)
+  const charBoxX = (charBoxOptions.x ?? 0) + charBoxWidth/2
+  const charBoxY = charBoxOptions.y !== undefined ? (charBoxHeight*0.5 + charBoxOptions.y) : (charBoxHeight*0.5 + fontSize/2)
   return <Hud>
   <OrthographicCamera makeDefault position={[0,0,5]} />
   <group position={[x, y, 0]}>
       {character ? <RoundedBox
         radius={charBoxHeight/2}
         args={[charBoxWidth, charBoxHeight, 1]}
-        position={[charBoxWidth/2, charBoxHeight*0.5*1.5, 1]}
-        material-color={backgroundColor}
-        material-opacity={opacity}
+        position={[charBoxX, charBoxY, 1]}
+        material-color={charBoxOptions.bg ?? backgroundColor}
+        material-opacity={charBoxOptions.opacity ?? opacity}
         material-transparent
       >
       <Text
-        fontSize={fontSize}
-        lineHeight={lineHeight}
-        color={fontColor}
+        fontSize={charBoxOptions.labelSize ?? fontSize}
+        lineHeight={1}
+        color={charBoxOptions.labelColor ?? fontColor}
         position={[0,0,1]}
       >
         {character}

@@ -1,8 +1,7 @@
 import { Text } from "@react-three/drei"
 import { Vector2 } from "@react-three/fiber"
-import { ComponentProps, forwardRef, useCallback, useEffect, useRef, useState } from "react"
+import { ComponentProps, forwardRef, useEffect, useRef, useState } from "react"
 import { Mesh, Box3, Vector3 } from 'three';
-import useTrigger from "../hooks/useTrigger"
 import { vector2ToTuple } from "../utils"
 
 // range from 1-10 (technically > 0 && <= 500)
@@ -17,7 +16,8 @@ type BaseTeleprompterTextProps = {
   printingDone: boolean,
   mode?: 'word' | 'letter' | 'instant',
   position?: Vector2,
-  maxHeight?: number
+  maxHeight: number
+  maxWidth: number
 }
 
 export type TeleprompterTextProps = BaseTeleprompterTextProps & Omit<TextProps, 'anchorX' | 'anchorY' | 'ref' | 'children' | keyof BaseTeleprompterTextProps>
@@ -31,8 +31,8 @@ const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
   mode = 'word',
   lineHeight = 1.25,
   fontSize = 16,
-  maxHeight = 0,
-  maxWidth = 0,
+  maxHeight,
+  maxWidth,
   ...textProps
 }: TeleprompterTextProps, ref) => {
 

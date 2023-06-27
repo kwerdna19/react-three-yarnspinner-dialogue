@@ -5,9 +5,8 @@ import { OptionResult } from 'yarn-bound'
 import { Box3, Group, Vector3 as Vector } from 'three'
 import { vector2ToTuple } from "../utils"
 
-// range from 1-10 (technically 0.1 - 500)
 
-type Props = {
+type OptionsPickerProps = {
   fontSize?: number,
   lineHeight?: number,
   speed?: number,
@@ -28,7 +27,7 @@ const OptionsPicker = ({
   position,
   onHeightMeasure,
   defaultToFirstOption = false
-}: Props) => {
+}: OptionsPickerProps) => {
 
   const [x,y] = vector2ToTuple(position)
 

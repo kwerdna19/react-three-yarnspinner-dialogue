@@ -111,6 +111,21 @@ function Demo({ text }: { text: string }) {
       fontSize={18}
       bottom={40}
       skippable
+      // backgroundColor="red"
+      getCharacterLabelAttributes={({character}) => {
+        if(character === 'Gambler') {
+          return {
+            labelColor: 'green',
+          }
+        }
+
+        if(character === 'Companion') {
+          return {
+            labelColor: 'red',
+            bg: 'blue'
+          }
+        }
+      }}
     />
 }
 
