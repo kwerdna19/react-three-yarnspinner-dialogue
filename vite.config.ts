@@ -8,6 +8,7 @@ import * as packageJson from './package.json'
 export default defineConfig({
   plugins: [react(), dts({
     insertTypesEntry: true,
+    include: ['src/lib.ts']
   })],
   build: {
     lib: {
