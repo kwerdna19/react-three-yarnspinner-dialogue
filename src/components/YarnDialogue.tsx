@@ -52,10 +52,12 @@ export type YarnDialogProps = {
   top?: number | string,
   left?: number | string,
   right?: number | string,
+  defaultCharacterLabelAttributes?: Partial<CharacterLabelAttributes> 
   getCharacterLabelAttributes?: (input: {
     character: string | undefined | null,
     boxWidth: number,
-    boxHeight: number
+    boxHeight: number,
+    defaultAttributes: Partial<CharacterLabelAttributes>
   }) => CharacterLabelAttributes | undefined
 }
 
@@ -86,7 +88,8 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
   startNode,
   commands,
   bottom, top, left, right,
-  getCharacterLabelAttributes = () => undefined,
+  getCharacterLabelAttributes,
+  defaultCharacterLabelAttributes,
   advanceOnClick = false
 }: YarnDialogProps, ref) => {
 
@@ -204,11 +207,17 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
     return null
   }
 
-  const charBoxOptions = getCharacterLabelAttributes({
+  const baseCharBoxOptions = getCharacterLabelAttributes ? getCharacterLabelAttributes({
     boxHeight: height,
     boxWidth: width,
-    character: character
-  }) ?? {}
+    character: character,
+    defaultAttributes: defaultCharacterLabelAttributes ?? {}
+  }) : defaultCharacterLabelAttributes
+
+  const charBoxOptions = {
+    ...defaultCharacterLabelAttributes,
+    ...baseCharBoxOptions,
+  }
 
   const charBoxWidth = charBoxOptions.width ?? (width / 3.5)
   const charBoxHeight = charBoxOptions.height ?? (fontSize*2.25)
