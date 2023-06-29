@@ -107,7 +107,7 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
   const gameRef = useRef<YarnBound | null>(null)
 
   useEffect(() => {
-    console.log("INIT YARNBOUND")
+    // console.log("INIT YARNBOUND")
     gameRef.current = new YarnBound({
       startAt: startNode ?? useYarnStore.getState().node,
       dialogue: yarn,
@@ -135,7 +135,7 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
     if(runner.currentResult && 'options' in runner.currentResult && step === undefined) {
       return 
     }
-    console.log('--- advance!')
+    // console.log('--- advance!')
     runner.advance(step)
     if(runner.currentResult && 'metadata' in runner.currentResult && runner.currentResult.metadata?.title) {
       setNode(runner.currentResult?.metadata?.title)
