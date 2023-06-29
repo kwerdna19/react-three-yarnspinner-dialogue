@@ -1,7 +1,7 @@
 import { Hud, PerspectiveCamera } from "@react-three/drei";
 
 
-export default function TestComponent() {
+export function TestComponent() {
 
   return (<Hud>
     <PerspectiveCamera makeDefault position={[0, 0, 10]} />
