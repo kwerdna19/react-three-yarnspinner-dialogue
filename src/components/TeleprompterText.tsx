@@ -20,7 +20,42 @@ type BaseTeleprompterTextProps = {
   maxWidth: number
 }
 
-export type TeleprompterTextProps = BaseTeleprompterTextProps & Omit<TextProps, 'anchorX' | 'anchorY' | 'ref' | 'children' | keyof BaseTeleprompterTextProps>
+// use this blank space char as the padding character so that "s___" is considered a single word for word break logic
+const blankChar = '‎'
+
+// shortcut to not call Array.from for values 1-10
+const spaces: Record<number, string> = {
+  1: `${blankChar}`,
+  2: `${blankChar}${blankChar}`,
+  3: `${blankChar}${blankChar}${blankChar}`,
+  4: `${blankChar}${blankChar}${blankChar}${blankChar}`,
+  5: `${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}`,
+  6: `${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}`,
+  7: `${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}`,
+  8: `${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}`,
+  9: `${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}`,
+  10: `${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}${blankChar}`
+}
+
+const getSpaces = (num: number) => {
+  if(num <= 0) {
+    return ''
+  }
+  if(num <= 10) {
+    return spaces[num]
+  }
+  return Array.from({length: num}).map(() => blankChar).join('')
+}
+
+const getNumberOfPaddingSpaces = (text: string, charIndex: number) => {
+  const nextSpaceIndex = text.indexOf(' ', charIndex)
+  if(nextSpaceIndex < 0) {
+    return text.length - charIndex
+  }
+  return nextSpaceIndex - charIndex
+}
+
+export type TeleprompterTextProps = BaseTeleprompterTextProps & Omit<TextProps, 'overflowWrap' | 'whiteSpace' | 'anchorX' | 'anchorY' | 'ref' | 'children' | keyof BaseTeleprompterTextProps>
 
 const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
   line,
@@ -53,7 +88,9 @@ const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
     const [elementNum, setElementNum] = useState(0)
 
     const joinChar = mode === 'word' ? ' ' : ''
-    const text = elements.slice(0, elementNum).join(joinChar)
+
+    const paddingSpaces = !line || mode !== 'letter' || line.charAt(elementNum - 1) === ' ' ? 0 : getNumberOfPaddingSpaces(line, elementNum)
+    const text = elements.slice(0, elementNum).join(joinChar) + getSpaces(paddingSpaces)
 
     useEffect(() => {
       if(printingDone) {
@@ -95,10 +132,12 @@ const TeleprompterText = forwardRef<Mesh, TeleprompterTextProps>(({
           const height = new Box3().setFromObject(ref.current).getSize(new Vector3()).y
           if(height > maxHeight && !isCutoff.current) {
             isCutoff.current = true
-            console.warn(`The following text is being cut off:\n"${line}"`)
+            console.warn(`The following text is being cut off by the dialogue box window:\n"${line}"`)
           }
         }
       }}
+      whiteSpace="normal"
+      overflowWrap="normal"
       {...textProps}
   >
     {text}
