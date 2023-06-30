@@ -25,7 +25,7 @@ export default defineConfig({
           'react-dom': 'ReactDOM',
           'three': 'three',
           'yarn-bound': 'YarnBound',
-          '@react-three/fiber': '@react-three/fiber'
+          '@react-three/fiber': 'ReactThreeFiber'
         }
       }
     },
