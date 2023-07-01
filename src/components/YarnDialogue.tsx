@@ -1,6 +1,6 @@
 import { Vector2, useThree } from "@react-three/fiber"
 import { getCharacter, getValueFromVariableInput, vector2ToTuple } from "../utils"
-import { ComponentProps, forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { ComponentProps, forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import useCommandHandler from "../hooks/useCommandHandler"
 import YarnBound, { YarnStorage } from "yarn-bound"
 import TeleprompterText, { TeleprompterTextProps } from "./TeleprompterText"
@@ -95,21 +95,22 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
   advanceOnClick = false
 }: YarnDialogProps, ref) => {
 
-  const { size: { width: canvasWidth, height: canvasHeight } } = useThree()
+  const [printingDone, setPrintingDone] = useState(false)
+  const [showOptions, setShowOptions] = useState(false)
 
+  const gameRef = useRef<YarnBound | null>(null)
+  const textRef = useRef<Mesh>(null)
+
+
+  const { size: { width: canvasWidth, height: canvasHeight } } = useThree()
   const width = getValueFromVariableInput(inputWidth, canvasWidth)
   const height = getValueFromVariableInput(inputHeight, canvasHeight)
 
-  const textRef = useRef<Mesh>(null)
-  const [printingDone, setPrintingDone] = useState(false)
-  const [showOptions, setShowOptions] = useState(false)
 
   const update = useForceUpdate()
   const setNode = useYarnStore(state => state.setNode)
 
   const handleCommand = useCommandHandler(commands)
-
-  const gameRef = useRef<YarnBound | null>(null)
 
   useEffect(() => {
     // console.log("INIT YARNBOUND")
@@ -125,6 +126,16 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
     setShowOptions(false)
     update()
   }, [yarn, storage, handleCommand, update, startNode, setPrintingDone, setShowOptions])
+
+  useEffect(() => {
+    if(!printingDone) {
+      return
+    }
+    const t = setTimeout(() => {
+      setShowOptions(true)
+    }, 1000/textSpeed)
+    return () => clearTimeout(t)
+  }, [printingDone, setShowOptions, textSpeed])
 
   const advance = useCallback((step?: number) => {
     const runner = gameRef.current
@@ -156,34 +167,43 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
     }
   }, [advance]);
 
-  const getPosition = () => {
+  const [posX, posY] = vector2ToTuple(position)
+  const [transformX, transformY] = transform ?? [null, null]
 
-    let [x, y] = vector2ToTuple(position)
-    const xTransform = (transform ? -1*getValueFromVariableInput(transform[0], width) : 0)
-    const yTransform = (transform ? getValueFromVariableInput(transform[1], height) : 0)
+  const { x, y } = useMemo(() => {
 
-    if(bottom !== undefined) {
-      y = -canvasHeight/2 + height + getValueFromVariableInput(bottom, canvasHeight) - yTransform
-    } else if (top !== undefined) {
-      y = canvasHeight/2 - getValueFromVariableInput(top, canvasHeight) + yTransform
-    } else {
-      y += yTransform
-    }
+      let x = posX
+      let y = posY
 
-    if(left !== undefined) {
-      x = -canvasWidth/2 + getValueFromVariableInput(left, canvasWidth) + xTransform
-    } else if (right !== undefined) {
-      x = canvasWidth/2 - width - getValueFromVariableInput(right, canvasWidth) + xTransform
-    } else {
-      x += xTransform
-    }
+      const xTransform = (transformX ? -1*getValueFromVariableInput(transformX, width) : 0)
+      const yTransform = (transformY ? getValueFromVariableInput(transformY, height) : 0)
+  
+      if(bottom !== undefined) {
+        y = -canvasHeight/2 + height + getValueFromVariableInput(bottom, canvasHeight) - yTransform
+      } else if (top !== undefined) {
+        y = canvasHeight/2 - getValueFromVariableInput(top, canvasHeight) + yTransform
+      } else {
+        y += yTransform
+      }
+  
+      if(left !== undefined) {
+        x = -canvasWidth/2 + getValueFromVariableInput(left, canvasWidth) + xTransform
+      } else if (right !== undefined) {
+        x = canvasWidth/2 - width - getValueFromVariableInput(right, canvasWidth) + xTransform
+      } else {
+        x += xTransform
+      }
+  
+      return { x, y }
 
-    return { x, y }
-  }
-
-  const { x, y } = getPosition()
+  }, [left, right, top, bottom, posX, posY, canvasHeight, canvasWidth, height, width, transformX, transformY])
 
   const current = gameRef.current?.currentResult
+
+  if(current?.isDialogueEnd) {
+    return null
+  }
+
   const hasOptions = current && 'options' in current
 
   const hasText =  current && 'text' in current
@@ -191,23 +211,7 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
 
   const character = getCharacter(current)
 
-
-  useEffect(() => {
-    if(!printingDone) {
-      return
-    }
-    const t = setTimeout(() => {
-      setShowOptions(true)
-    }, 1000/textSpeed)
-    return () => clearTimeout(t)
-  }, [printingDone, setShowOptions, textSpeed])
-
   const optionsY = (textRef.current?.geometry?.boundingBox?.min?.y || 0) - (lineHeight*fontSize*0.5)
-
-
-  if(current?.isDialogueEnd) {
-    return null
-  }
 
   const defaultCharBoxWidth = width / 3.5
   const defaultCharBoxHeight = (fontSize*2.25)
