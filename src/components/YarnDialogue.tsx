@@ -234,7 +234,7 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
     }
   }}>
       {character ? <RoundedBox
-        radius={charBoxHeight/2}
+        radius={charBoxOptions.radius ?? charBoxHeight/2}
         args={[charBoxWidth, charBoxHeight, 1]}
         position={[charBoxX, charBoxY, 1]}
         material-color={charBoxOptions.bg ?? backgroundColor}
