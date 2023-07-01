@@ -91,7 +91,7 @@ function App() {
         fontSize={18}
         bottom={40}
         skippable
-        getCharacterLabelAttributes={({character}) => {
+        getCharacterLabelAttributes={({character, characterBoxWidth, dialogueBoxWidth }) => {
           if(character === 'Gambler') {
             return {
               labelColor: 'green',
@@ -100,7 +100,8 @@ function App() {
           if(character === 'Companion') {
             return {
               labelColor: 'red',
-              bg: 'blue'
+              bg: 'blue',
+              x: dialogueBoxWidth - characterBoxWidth
             }
           }
         }}
