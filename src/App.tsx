@@ -91,6 +91,9 @@ function App() {
         fontSize={18}
         bottom={40}
         skippable
+        defaultCharacterLabelAttributes={{
+          width: '50%'
+        }}
         getCharacterLabelAttributes={({character, characterBoxWidth, dialogueBoxWidth }) => {
           if(character === 'Gambler') {
             return {
@@ -101,7 +104,7 @@ function App() {
             return {
               labelColor: 'red',
               bg: 'blue',
-              x: dialogueBoxWidth - characterBoxWidth
+              x: characterBoxWidth
             }
           }
         }}

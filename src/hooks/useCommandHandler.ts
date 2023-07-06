@@ -32,12 +32,9 @@ const baseCommandMap = {
 } satisfies CommandMap
 
 const useCommandHandler = (additionalCommandsMap?: CommandMap) => {
+
   const three = useThree()
-
-
-  // @TODO configure some nice THREE scene commands
-  // figure out attaching to a ref? updating with useEffect as three scene changes? is that needed?
-
+  
   const commandMap = useMemo(() => {
     
     const baseThreeCommands = {

@@ -2,10 +2,10 @@ import { Vector2, useThree } from "@react-three/fiber"
 import { getCharacter, getValueFromVariableInput, vector2ToTuple } from "../utils"
 import { ComponentProps, forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import useCommandHandler from "../hooks/useCommandHandler"
-import YarnBound, { YarnStorage } from "yarn-bound"
+import YarnBound, { CurrentResult, YarnStorage } from "yarn-bound"
 import TeleprompterText, { TeleprompterTextProps } from "./TeleprompterText"
 import { Hud, OrthographicCamera, RoundedBox, Text } from "@react-three/drei"
-import { Mesh } from "three"
+import { Group, Mesh } from "three"
 import OptionsPicker from "./OptionsPicker"
 import useForceUpdate from "../hooks/useForceUpdate"
 import { yarnFunctions } from "./yarn-functions"
@@ -18,15 +18,24 @@ export type CharacterLabelAttributes = {
   x?: number,
   y?: number,
   bg?: string,
-  width?: number,
-  height?: number,
+  width?: number | string,
+  height?: number | string,
   opacity?: number,
   labelColor?: string,
   labelSize?: number
 } & Pick<RoundedBoxProps, 'radius'>
 
-export type YarnDialogProps = {
+export type CharacterLabelInput = {
+  character: string | undefined | null,
+  dialogueBoxWidth: number,
+  dialogueBoxHeight: number,
+  characterBoxWidth: number,
+  characterBoxHeight: number
+}
+
+export type YarnDialogueProps = {
   yarn: string,
+  renderPriority?: number,
   advanceOnClick?: boolean,
   width: number | string,
   height: number | string
@@ -53,21 +62,18 @@ export type YarnDialogProps = {
   left?: number | string,
   right?: number | string,
   defaultCharacterLabelAttributes?: Partial<CharacterLabelAttributes> 
-  getCharacterLabelAttributes?: (input: {
-    character: string | undefined | null,
-    dialogueBoxWidth: number,
-    dialogueBoxHeight: number,
-    characterBoxWidth: number,
-    characterBoxHeight: number,
-    defaultAttributes: Partial<CharacterLabelAttributes>
-  }) => CharacterLabelAttributes | undefined
+  getCharacterLabelAttributes?: (input: CharacterLabelInput) => CharacterLabelAttributes | undefined
 }
 
 export type YarnDialogue = {
-  advance: (step?: number) => void
+  advance: (step?: number) => void,
+  setSelectedOption: (step?: number | null | undefined) => void
+  selectedOption: number | null,
+  current: CurrentResult | null
+  character: string | null
 }
 
-export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
+export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogueProps>(({
   yarn,
   width: inputWidth,
   height: inputHeight,
@@ -92,14 +98,20 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
   bottom, top, left, right,
   getCharacterLabelAttributes,
   defaultCharacterLabelAttributes,
-  advanceOnClick = false
-}: YarnDialogProps, ref) => {
+  advanceOnClick = false,
+  renderPriority,
+}: YarnDialogueProps, ref) => {
 
   const [printingDone, setPrintingDone] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
 
+  const defaultSelected = defaultToFirstOption ? 0 : null
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<null | number>(defaultSelected)
+
+
   const gameRef = useRef<YarnBound | null>(null)
   const textRef = useRef<Mesh>(null)
+  const optionsRef = useRef<Group>(null)
 
 
   const { size: { width: canvasWidth, height: canvasHeight } } = useThree()
@@ -161,11 +173,20 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
     update()
   }, [setNode, printingDone, skippable, setPrintingDone, setShowOptions, update])
 
+  const current = gameRef.current?.currentResult
+  const character = getCharacter(current)
+
   useImperativeHandle(ref, () => {
     return {
-      advance: (step?: number) => advance(step)
+      advance,
+      setSelectedOption: (index?: number | null | undefined) => {
+        setSelectedOptionIndex(typeof index === 'number' ? index : null)
+      },
+      selectedOption: selectedOptionIndex,
+      current: gameRef.current?.currentResult ?? null,
+      character: character ?? null
     }
-  }, [advance]);
+  }, [advance, setSelectedOptionIndex, selectedOptionIndex, character]);
 
   const [posX, posY] = vector2ToTuple(position)
   const [transformX, transformY] = transform ?? [null, null]
@@ -198,8 +219,6 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
 
   }, [left, right, top, bottom, posX, posY, canvasHeight, canvasWidth, height, width, transformX, transformY])
 
-  const current = gameRef.current?.currentResult
-
   if(current?.isDialogueEnd) {
     return null
   }
@@ -209,12 +228,10 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
   const hasText =  current && 'text' in current
   const text = hasText ? current.text : undefined
 
-  const character = getCharacter(current)
-
   const optionsY = (textRef.current?.geometry?.boundingBox?.min?.y || 0) - (lineHeight*fontSize*0.5)
 
-  const defaultCharBoxWidth = width / 3.5
-  const defaultCharBoxHeight = (fontSize*2.25)
+  const defaultCharBoxWidth = defaultCharacterLabelAttributes?.width ? getValueFromVariableInput(defaultCharacterLabelAttributes.width, width) : (width / 3.5)
+  const defaultCharBoxHeight = defaultCharacterLabelAttributes?.height ?  getValueFromVariableInput(defaultCharacterLabelAttributes.height, height) : (fontSize*2.25)
 
   const baseCharBoxOptions = getCharacterLabelAttributes ? getCharacterLabelAttributes({
     dialogueBoxHeight: height,
@@ -222,22 +239,25 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
     characterBoxHeight: defaultCharBoxHeight,
     characterBoxWidth: defaultCharBoxWidth,
     character: character,
-    defaultAttributes: defaultCharacterLabelAttributes ?? {}
   }) : defaultCharacterLabelAttributes
 
   const charBoxOptions = {
+    width: defaultCharBoxWidth,
+    height: defaultCharBoxHeight,
+    x: 0,
+    y: 0,
     ...defaultCharacterLabelAttributes,
     ...baseCharBoxOptions,
   }
 
-  const charBoxWidth = charBoxOptions.width ?? defaultCharBoxWidth
-  const charBoxHeight = charBoxOptions.height ?? defaultCharBoxHeight
-  const charBoxX = (charBoxOptions.x ?? 0) + charBoxWidth/2
-  const charBoxY = charBoxOptions.y !== undefined ? (charBoxHeight*0.5 + charBoxOptions.y) : (charBoxHeight*0.5 + fontSize/2)
+  const charBoxWidth = typeof charBoxOptions.width === 'string' ? getValueFromVariableInput(charBoxOptions.width, width) : defaultCharBoxWidth
+  const charBoxHeight = typeof charBoxOptions.height === 'string' ? getValueFromVariableInput(charBoxOptions.height, height) : defaultCharBoxHeight
+  const charBoxX = charBoxOptions.x + charBoxWidth/2
+  const charBoxY = charBoxHeight*0.5 + charBoxOptions.y
 
   const showMoreIndicator = printingDone && !hasOptions
 
-  return (<Hud>
+  return (<Hud renderPriority={renderPriority}>
   <OrthographicCamera makeDefault position={[0,0,5]} />
   <group position={[x, y, 0]} onClick={() => {
     if(!hasOptions && advanceOnClick) {
@@ -272,19 +292,20 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
     >
     <group position={[-width/2 + padding, height/2 - padding, 0]} >
       <TeleprompterText
+        ref={textRef}
         line={text}
         printingDone={printingDone}
         setPrintingDone={setPrintingDone}
         fontSize={fontSize}
         lineHeight={lineHeight}
-        ref={textRef}
         mode={textMode}
         speed={textSpeed}
         color={fontColor}
         maxWidth={width - 2*padding}
         maxHeight={height - 2*padding}
       />
-      {showOptions && hasOptions && <OptionsPicker
+      {(showOptions && hasOptions) ? <OptionsPicker
+          ref={optionsRef}
           options={current.options}
           onSelection={advance}
           speed={textSpeed}
@@ -292,8 +313,9 @@ export const YarnDialogue = forwardRef<YarnDialogue, YarnDialogProps>(({
           lineHeight={optionsLineHeight ?? lineHeight}
           fontColor={optionsFontColor ?? fontColor}
           position={[0, optionsY]}
-          defaultToFirstOption={defaultToFirstOption}
-      />}
+          selectedIndex={selectedOptionIndex}
+          setSelectedIndex={setSelectedOptionIndex}
+      /> : null}
     </group>
   </RoundedBox>  
   </group>
