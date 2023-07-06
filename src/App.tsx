@@ -94,7 +94,7 @@ function App() {
         defaultCharacterLabelAttributes={{
           width: '50%'
         }}
-        getCharacterLabelAttributes={({character, characterBoxWidth, dialogueBoxWidth }) => {
+        getCharacterLabelAttributes={({character, characterBoxWidth }) => {
           if(character === 'Gambler') {
             return {
               labelColor: 'green',
