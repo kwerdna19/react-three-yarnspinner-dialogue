@@ -8,6 +8,7 @@ import * as packageJson from './package.json'
 export default defineConfig({
   plugins: [react(), dts({
     insertTypesEntry: true,
+    copyDtsFiles: true,
   })],
   build: {
     lib: {
