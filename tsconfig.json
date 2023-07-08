@@ -15,8 +15,10 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["./types/yarn-bound.d.ts"]
+    "paths": {
+      "yarn-bound": ["./types/yarn-bound"],
+    }
   },
   "include": ["src", "types"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [{ "path": "./tsconfig.node.json" }],
 }
