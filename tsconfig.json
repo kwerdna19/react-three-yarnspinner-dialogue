@@ -16,7 +16,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "yarn-bound": ["./types/yarn-bound"],
+      "yarn-bound": ["./src/types/yarn-bound"],
     }
   },
   "include": ["src", "types"],

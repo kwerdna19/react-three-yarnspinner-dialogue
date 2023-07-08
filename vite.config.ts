@@ -13,7 +13,6 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/lib.ts'),
       name: 'ReactThreeYarnSpinnerDialogue',
-      // the proper extensions will be added
       fileName: 'react-three-yarnspinner-dialogue',
       formats: ['es', 'umd']
     },
