@@ -8,9 +8,11 @@ export default defineConfig({
   plugins: [react(), dts({
     copyDtsFiles: true,
     insertTypesEntry: true,
+    // hack to get the ambient (custom) declaration for yarn-bound to properly assign types
     beforeWriteFile(filePath, content) {
-        if(content.includes('from "yarn-bound"') || content.includes('from \'yarn-bound\'')) {
-          const relPath = relative(resolve(filePath, '..'), resolve(__dirname, 'dist', 'types', 'yarn-bound.d.ts'))
+      const external = 'yarn-bound'
+        if(content.includes(`from "${external}"`) || content.includes(`from '${external}'`)) {
+          const relPath = relative(resolve(filePath, '..'), resolve(__dirname, 'dist', 'types', external + '.d.ts'))
           const importPath = relPath.startsWith('.') ? relPath : `./${relPath}`
           return {
             filePath,
