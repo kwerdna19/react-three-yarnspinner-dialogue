@@ -19,6 +19,6 @@
       "yarn-bound": ["./src/types/yarn-bound"],
     }
   },
-  "include": ["src", "types"],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }],
 }

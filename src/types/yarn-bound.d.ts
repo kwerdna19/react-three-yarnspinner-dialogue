@@ -1,7 +1,9 @@
-type HasToString = { 'toString': () => string }
-type Primitive = number | string | boolean
+
 
 declare module 'yarn-bound' {
+
+  type HasToString = { 'toString': () => string }
+  type Primitive = number | string | boolean
 
   export type ResultMetaData = {
     title: string,
@@ -71,5 +73,3 @@ declare module 'yarn-bound' {
   }
   
 }
-
-export {}
